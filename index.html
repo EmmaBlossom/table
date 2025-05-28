@@ -29,7 +29,7 @@ button.reset:hover{opacity:.9}
 .bank-menu label:hover{background:var(--bg)}
 /* --- таблица --- */
 .table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;margin-top:.5rem;table-layout:fixed} /* фиксированное: столбцы делят ширину */
+table{width:100%;border-collapse:collapse;margin-top:.5rem;table-layout:fixed}
 th,td{padding:.6rem .5rem;text-align:left;border-bottom:1px solid var(--border);word-break:break-word}
 thead th{background:#f0f4ff;font-weight:600}
 tr:hover{background:#f5f9ff;cursor:pointer}
@@ -42,7 +42,7 @@ tr:hover{background:#f5f9ff;cursor:pointer}
 @media(max-width:600px){
   table{font-size:.9rem}
   th,td{padding:.5rem .4rem}
-  thead th{position:sticky;top:0;z-index:1} /* липкая шапка */
+  thead th{position:sticky;top:0;z-index:1}
 }
 </style>
 </head>
@@ -50,7 +50,7 @@ tr:hover{background:#f5f9ff;cursor:pointer}
 <h1>Текущие кэшбэк-акции</h1>
 
 <div class="filters">
-  <!-- Банк (чекбоксы в dropdown) -->
+  <!-- Банк -->
   <div class="filter-group" style="position:relative">
     <label>Банк</label>
     <button id="bankBtn" class="dropdown-btn">Выбрать банк ▾</button>
@@ -98,9 +98,9 @@ tr:hover{background:#f5f9ff;cursor:pointer}
 <div id="details" class="details"></div>
 
 <script>
-// ------ ДАННЫЕ -------------------------------------------------
+// ----------------- ДАННЫЕ (пример) -----------------
 const data=[
-   {
+    {
     "Банк": "Т-Банк",
     "Карта": "Black",
     "Категория": "Еда и продукты",
@@ -299,12 +299,10 @@ const data=[
     "О партнере": "MASCOTTE — бренд обуви и аксессуаров, который делает ваш образ ярче."
   }
 ];
-// ---------------------------------------------------------------
+// ----------------------------------------------------
 
-// ---- КЛЮЧИ ПОЛЕЙ---
 const BANK='Банк',CAT='Категория',BRAND='Компания/бренд',SIZE='Размер кэшбека/скидки ';
 
-// ---- DOM --------------------------------------------------------
 const bankBtn=document.getElementById('bankBtn');
 const bankMenu=document.getElementById('bankMenu');
 const categorySel=document.getElementById('categoryFilter');
@@ -317,21 +315,19 @@ const tbody=table.querySelector('tbody');
 const detailsBox=document.getElementById('details');
 const hintText=document.getElementById('hintText');
 
-// --- state ---------------------------------------------------
 let selectedBanks=new Set();
 let selectedCat='',selectedBrand='',selectedSize='';
 let searchTerm='';
 
-// --- helpers -------------------------------------------------
 const uniq=a=>[...new Set(a)];
 const lower=s=>s.toString().toLowerCase();
 const values=item=>Object.values(item).join(' ♦ ');
 
-// ---- init ---------------------------------------------------
+// ---------- инициализация ----------
 initFilters();
 applyFilters();
 
-// ---- handlers ----------
+// ---------- обработчики ----------
 bankBtn.addEventListener('click',()=>bankMenu.classList.toggle('show'));
 document.addEventListener('click',e=>{
   if(!bankMenu.contains(e.target)&&e.target!==bankBtn) bankMenu.classList.remove('show');
@@ -340,17 +336,24 @@ categorySel.addEventListener('change',e=>{selectedCat=e.target.value;applyFilter
 brandSel.addEventListener('change',e=>{selectedBrand=e.target.value;applyFilters();});
 sizeSel.addEventListener('change',e=>{selectedSize=e.target.value;applyFilters();});
 searchInput.addEventListener('input',e=>{searchTerm=e.target.value.trim();applyFilters();});
+
+/* === изменённый обработчик «Сбросить» === */
 resetBtn.addEventListener('click',()=>{
-  selectedBanks.clear();selectedCat=selectedBrand=selectedSize=searchTerm='';
+  selectedBanks.clear();
+  selectedCat=selectedBrand=selectedSize=searchTerm='';
   searchInput.value='';
   [...bankMenu.querySelectorAll('input')].forEach(c=>c.checked=false);
   categorySel.value=brandSel.value=sizeSel.value='';
+
+  /* прячем и очищаем детали */
+  detailsBox.style.display='none';
+  detailsBox.innerHTML='';
+
   applyFilters();
 });
 
-// ---- functions ----------
+// ---------- функции ----------
 function initFilters(){
-  // bank
   const banks=uniq(data.map(r=>r[BANK])).sort();
   bankMenu.innerHTML=banks.map(b=>`<label><input type="checkbox" value="${b}"> ${b}</label>`).join('');
   bankMenu.querySelectorAll('input').forEach(cb=>{
@@ -359,7 +362,6 @@ function initFilters(){
       applyFilters();
     });
   });
-  // other selects
   fillSelect(categorySel,uniq(data.map(r=>r[CAT])));
   fillSelect(brandSel   ,uniq(data.map(r=>r[BRAND])));
   fillSelect(sizeSel    ,uniq(data.map(r=>r[SIZE])));
@@ -379,12 +381,11 @@ function applyFilters(){
   table.classList.toggle('hidden',!showTable);
   hintText.style.display=showTable?'none':'block';
 
+  /* если таблицы нет, детали тоже скрываем */
+  if(!showTable){ detailsBox.style.display='none'; }
+
   renderTable(filtered);
   updateSelectOptions(filtered);
-
-  if(detailsBox.style.display==='block'&&!filtered.some(r=>r.id===detailsBox.dataset.id)){
-    detailsBox.style.display='none';
-  }
 }
 
 function renderTable(rows){

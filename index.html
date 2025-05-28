@@ -1,44 +1,68 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Интерактивная таблица</title>
-
-  <!-- DataTables CSS -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/searchpanes/2.2.0/css/searchPanes.dataTables.min.css" />
-
-  <style>
-    body {font-family: system-ui, sans-serif; margin: 0; padding: 1rem;}
-    h1 {text-align:center; margin-bottom:1rem;}
-    .container {max-width: 1200px; margin:0 auto;}
-    table.dataTable tbody tr {white-space: nowrap;}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Кэшбэк-акции банков</title>
+<style>
+  :root{
+     --accent:#222;
+     --bg:#fff;
+     --muted:#888;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+       margin:0;padding:1rem;background:var(--bg);color:var(--accent);}
+  h1{font-size:1.5rem;margin:0 0 1rem;}
+  .filters{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;}
+  .filters select,
+  .filters input{padding:.4rem .6rem;border:1px solid var(--muted);border-radius:4px;font:inherit;min-width:140px;}
+  .filters button{padding:.4rem .9rem;border:none;border-radius:4px;background:var(--accent);color:#fff;cursor:pointer;}
+  .filters button:hover{opacity:.9;}
+  table{width:100%;border-collapse:collapse;margin-bottom:1rem;}
+  thead{position:sticky;top:0;background:#f6f6f6;}
+  th,td{padding:.55rem .6rem;border-bottom:1px solid #e4e4e4;text-align:left;}
+  tr{cursor:pointer;transition:background .15s;}
+  tr:hover{background:#fafafa;}
+  #details:empty{display:none;padding:1rem;border:1px solid #e4e4e4;border-radius:6px;white-space:pre-line;}
+  @media(max-width:600px){
+     .filters select{flex:1 1 48%;}
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>Моя таблица</h1>
 
-    <!-- Таблица; DataTables сам заполнит содержимое -->
-    <table id="myTable" class="display nowrap" style="width:100%"></table>
-  </div>
+<h1>Кэшбэк-акции банков</h1>
 
-  <!-- jQuery и DataTables JS -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-  <script src="https://cdn.datatables.net/searchpanes/2.2.0/js/dataTables.searchPanes.min.js"></script>
+<!-- Фильтры + поиск -->
+<div class="filters">
+  <select id="bankFilter"><option value="">Банк</option></select>
+  <select id="categoryFilter"><option value="">Категория</option></select>
+  <select id="brandFilter"><option value="">Компания/бренд</option></select>
+  <select id="cashbackFilter"><option value="">Размер кэшбека/скидки</option></select>
+  <input type="search" id="searchInput" placeholder="Поиск..." />
+  <button id="resetBtn">Сбросить</button>
+</div>
 
-  <script>
-    // ------------------------------------------------------------------------
-    // 1) Сюда вставьте JSON‑массив, полученный из вашей Excel‑таблицы.
-    //    Пример одной строки (удалите после замены):
-    //    {"Артикул":"A001","Название":"Товар 1","Категория":"Кат1","Цена":1200,"Склад":"Москва","Остаток":34,"Поставщик":"ООО Рога","Дата":"2025‑05‑01"}
-    // ------------------------------------------------------------------------
-    const data = [
-  {
+<!-- Таблица -->
+<div style="overflow-x:auto;">
+  <table id="dataTable" style="display:none;">
+    <thead><tr>
+      <th>Банк</th>
+      <th>Компания/бренд</th>
+      <th>Размер кэшбека/скидки</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Подробности выбранной строки -->
+<pre id="details"></pre>
+
+<script>
+// ---- ДАННЫЕ (дополните/замените) ----
+const data = [
+    {
     "Банк": "Т-Банк",
     "Карта": "Black",
     "Категория": "Еда и продукты",
@@ -235,29 +259,141 @@
     "Макс. кэшбек/скидка в руб": "Максимальный размер кешбэка – 2 000 ₽.",
     "Сайт": "https://mascotte.ru/?utm_source=advcake&utm_medium=cpa&utm_campaign=vtb&utm_content=cashback&advcake_params=bc8bd579008eef9517372bd1c42bcc3d&utm_term=bc8bd579008eef9517372bd1c42bcc3d&erid=LdtCKSjoD&advcake_method=1&m=1",
     "О партнере": "MASCOTTE — бренд обуви и аксессуаров, который делает ваш образ ярче."
-  }      
-    ];
+  }
+];
+// ---- /ДАННЫЕ ----
 
-    // 2) Ничего трогать не надо: колонки и фильтры формируются автоматически.
-    const columns = Object.keys(data[0] || {}).map(key => ({ title: key, data: key }));
+// --- Нормализация названия поля с лишним пробелом ---
+data.forEach(o=>{
+  if(o["Размер кэшбека/скидки "] && !o["Размер кэшбека/скидки"]){
+    o["Размер кэшбека/скидки"] = o["Размер кэшбека/скидки "];
+    delete o["Размер кэшбека/скидки "];
+  }
+});
 
-    $(document).ready(function () {
-      $('#myTable').DataTable({
-        data: data,
-        columns: columns,
-        responsive: true,
-        deferRender: true,
-        // Показать поисковые панели (фильтры) над таблицей
-        dom: 'Plfrtip',         // P = SearchPanes, l = length menu, f = filter, r = processing, t = table, i = info, p = paging
-        searchPanes: {
-          cascadePanes: true,   // фильтры зависят друг от друга (удобно для узких экранов)
-          layout: 'columns-2'   // 2 колонки фильтров на десктопе
-        },
-        language: {
-          url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/ru.json'
+// --- DOM ссылочки ---
+const els = {
+  bank:      document.getElementById('bankFilter'),
+  category:  document.getElementById('categoryFilter'),
+  brand:     document.getElementById('brandFilter'),
+  cashback:  document.getElementById('cashbackFilter'),
+  search:    document.getElementById('searchInput'),
+  reset:     document.getElementById('resetBtn'),
+  table:     document.getElementById('dataTable'),
+  tbody:     document.getElementById('dataTable').querySelector('tbody'),
+  details:   document.getElementById('details')
+};
+
+// --- Заполняем фильтры исходными значениями ---
+const filterMap = {
+  bank:     "Банк",
+  category: "Категория",
+  brand:    "Компания/бренд",
+  cashback: "Размер кэшбека/скидки"
+};
+
+const masterOptions = {};   // исходные списки для «активного» фильтра
+Object.entries(filterMap).forEach(([id,key])=>{
+  masterOptions[id] = [...new Set(data.map(d=>d[key]))].sort();
+  fillSelect(els[id], masterOptions[id]);
+});
+
+function fillSelect(select, values){
+  select.length = 1;           // оставить placeholder
+  values.forEach(v=>{
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    select.appendChild(opt);
+  });
+}
+
+// --- Подписки ---
+Object.keys(filterMap).forEach(id=>{
+  els[id].addEventListener('change', ()=>updateFilters(id));
+});
+els.search.addEventListener('input', updateTable);
+els.reset.addEventListener('click', resetAll);
+
+// --- Логика фильтров ---
+function currentSel(){
+  const s={};
+  for(const id in filterMap){
+    const val = els[id].value;
+    if(val) s[filterMap[id]] = val;
+  }
+  return s;
+}
+
+function updateFilters(changedId){
+  const sel = currentSel();
+  // динамически пересчитаем списки для остальных фильтров
+  for(const id in filterMap){
+    if(id===changedId) continue;        // «активный» оставляем полным
+    const key = filterMap[id];
+    const vals = data.filter(row=>{
+        for(const k in sel){ if(k===key) continue;
+          if(row[k]!==sel[k]) return false;
         }
-      });
-    });
-  </script>
+        return true;
+      }).map(r=>r[key]);
+    fillSelect(els[id],[...new Set(vals)].sort());
+    // если прежнее значение ушло – сбрасываем
+    if(!vals.includes(els[id].value)) els[id].value="";
+  }
+  updateTable();
+}
+
+// --- Рендер таблицы ---
+function updateTable(){
+  const sel = currentSel();
+  const q   = els.search.value.trim().toLowerCase();
+
+  const rows = data.filter(row=>{
+    // фильтры-селекты
+    for(const k in sel){ if(row[k]!==sel[k]) return false; }
+    // поиск
+    if(q){
+      return Object.values(row).some(v=>String(v).toLowerCase().includes(q));
+    }
+    return true;
+  });
+
+  renderRows(rows);
+
+  const visible = Object.keys(sel).length>0 || q;
+  els.table.style.display = visible ? '' : 'none';
+}
+
+function renderRows(rows){
+  els.tbody.innerHTML='';
+  rows.forEach(row=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row["Банк"]}</td>
+      <td>${row["Компания/бренд"]}</td>
+      <td>${row["Размер кэшбека/скидки"]}</td>`;
+    tr.addEventListener('click', ()=>showDetails(row));
+    els.tbody.appendChild(tr);
+  });
+}
+
+function showDetails(row){
+  els.details.style.display='';
+  els.details.textContent = Object.entries(row)
+    .map(([k,v])=>`${k}: ${v}`).join('\n');
+  els.details.scrollIntoView({behavior:'smooth'});
+}
+
+function resetAll(){
+  Object.keys(filterMap).forEach(id=>{ els[id].value=''; fillSelect(els[id],masterOptions[id]); });
+  els.search.value='';
+  els.details.style.display='none';
+  updateTable();
+}
+
+// --- старт ---
+updateTable();
+</script>
 </body>
 </html>

@@ -15,7 +15,7 @@
 }
 *{box-sizing:border-box;font-family:var(--font);}
 body{margin:0;padding:1rem;max-width:1200px;margin-inline:auto;background:var(--bg);}
-h1{margin:0 0 1rem 0}
+h1{margin:0 0 1rem}
 .filters{display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:.75rem}
 .filter-group{display:flex;flex-direction:column;min-width:140px}
 .filter-group label{font-size:.875rem;font-weight:600;margin-bottom:.25rem}
@@ -27,22 +27,22 @@ button.reset:hover{opacity:.9}
 .bank-menu.show{display:block}
 .bank-menu label{display:flex;align-items:center;gap:.5rem;padding:.25rem .4rem;border-radius:4px;cursor:pointer}
 .bank-menu label:hover{background:var(--bg)}
-table{width:100%;border-collapse:collapse;margin-top:.5rem}
+/* --- таблица --- */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin-top:.5rem;table-layout:fixed} /* фиксированное: столбцы делят ширину */
 th,td{padding:.6rem .5rem;text-align:left;border-bottom:1px solid var(--border);word-break:break-word}
 thead th{background:#f0f4ff;font-weight:600}
 tr:hover{background:#f5f9ff;cursor:pointer}
-#hintText{margin:.75rem 0;font-size:.9rem;color:#666}
+/* скрытие */
+.hidden{display:none!important;}
+/* детали */
 .details{margin-top:1rem;padding:1rem;border:1px solid var(--border);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow);display:none;line-height:1.4}
 .details h2{margin-top:0}
-.hidden{display:none !important;}
+/* мобильные улучшения */
 @media(max-width:600px){
-  /* мобильная табличная верстка */
-  table,thead,tr,tbody,th,td{display:block;width:100%}
-  thead{display:none}
-  tr{margin-bottom:1rem;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
-  td{padding:.55rem 45% .55rem .6rem;border:none;border-bottom:1px solid var(--border)}
-  td:last-child{border-bottom:none}
-  td::before{content:attr(data-label);position:absolute;left:.75rem;font-weight:600}
+  table{font-size:.9rem}
+  th,td{padding:.5rem .4rem}
+  thead th{position:sticky;top:0;z-index:1} /* липкая шапка */
 }
 </style>
 </head>
@@ -86,19 +86,21 @@ tr:hover{background:#f5f9ff;cursor:pointer}
 
 <p id="hintText">Нужно выбрать фильтр «Категория», чтобы таблица отобразилась</p>
 
-<table id="dataTable" class="hidden">
-  <thead>
-    <tr><th>Банк</th><th>Компания/бренд</th><th>Размер</th></tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<div class="table-wrap">
+  <table id="dataTable" class="hidden">
+    <thead>
+      <tr><th>Банк</th><th>Компания/бренд</th><th>Размер</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
 <div id="details" class="details"></div>
 
 <script>
 // ------ ДАННЫЕ -------------------------------------------------
-const data = [
-    {
+const data=[
+   {
     "Банк": "Т-Банк",
     "Карта": "Black",
     "Категория": "Еда и продукты",
@@ -299,116 +301,103 @@ const data = [
 ];
 // ---------------------------------------------------------------
 
-// ---- КЛЮЧИ ПОЛЕЙ (trim обязательный, у одного поля есть пробел) ---
-const BANK  = 'Банк',
-      CAT   = 'Категория',
-      BRAND = 'Компания/бренд',
-      SIZE  = 'Размер кэшбека/скидки '; // <- есть пробел в конце
+// ---- КЛЮЧИ ПОЛЕЙ---
+const BANK='Банк',CAT='Категория',BRAND='Компания/бренд',SIZE='Размер кэшбека/скидки ';
 
 // ---- DOM --------------------------------------------------------
-const bankBtn       = document.getElementById('bankBtn');
-const bankMenu      = document.getElementById('bankMenu');
-const categorySel   = document.getElementById('categoryFilter');
-const brandSel      = document.getElementById('brandFilter');
-const sizeSel       = document.getElementById('sizeFilter');
-const searchInput   = document.getElementById('searchInput');
-const resetBtn      = document.getElementById('resetBtn');
-const table         = document.getElementById('dataTable');
-const tbody         = table.querySelector('tbody');
-const detailsBox    = document.getElementById('details');
-const hintText      = document.getElementById('hintText');
+const bankBtn=document.getElementById('bankBtn');
+const bankMenu=document.getElementById('bankMenu');
+const categorySel=document.getElementById('categoryFilter');
+const brandSel=document.getElementById('brandFilter');
+const sizeSel=document.getElementById('sizeFilter');
+const searchInput=document.getElementById('searchInput');
+const resetBtn=document.getElementById('resetBtn');
+const table=document.getElementById('dataTable');
+const tbody=table.querySelector('tbody');
+const detailsBox=document.getElementById('details');
+const hintText=document.getElementById('hintText');
 
-// --- Состояние ---------------------------------------------------
-let selectedBanks   = new Set();
-let selectedCat     = '';
-let selectedBrand   = '';
-let selectedSize    = '';
-let searchTerm      = '';
+// --- state ---------------------------------------------------
+let selectedBanks=new Set();
+let selectedCat='',selectedBrand='',selectedSize='';
+let searchTerm='';
 
-// --- Вспомогалки -------------------------------------------------
-const uniq = arr => [...new Set(arr)];
-const lower  = s => s.toString().toLowerCase();
-const values = item => Object.values(item).join(' ♦ ');
+// --- helpers -------------------------------------------------
+const uniq=a=>[...new Set(a)];
+const lower=s=>s.toString().toLowerCase();
+const values=item=>Object.values(item).join(' ♦ ');
 
-// --- Инициализация ----------------------------------------------
+// ---- init ---------------------------------------------------
 initFilters();
 applyFilters();
 
-// ---- Обработчики ------------------------------------------------
+// ---- handlers ----------
 bankBtn.addEventListener('click',()=>bankMenu.classList.toggle('show'));
 document.addEventListener('click',e=>{
-  if(!bankMenu.contains(e.target) && e.target!==bankBtn){ bankMenu.classList.remove('show');}
+  if(!bankMenu.contains(e.target)&&e.target!==bankBtn) bankMenu.classList.remove('show');
 });
 categorySel.addEventListener('change',e=>{selectedCat=e.target.value;applyFilters();});
 brandSel.addEventListener('change',e=>{selectedBrand=e.target.value;applyFilters();});
 sizeSel.addEventListener('change',e=>{selectedSize=e.target.value;applyFilters();});
 searchInput.addEventListener('input',e=>{searchTerm=e.target.value.trim();applyFilters();});
 resetBtn.addEventListener('click',()=>{
-  selectedBanks.clear();
-  selectedCat=selectedBrand=selectedSize=searchTerm='';
+  selectedBanks.clear();selectedCat=selectedBrand=selectedSize=searchTerm='';
   searchInput.value='';
-  [...bankMenu.querySelectorAll('input[type=checkbox]')].forEach(c=>c.checked=false);
+  [...bankMenu.querySelectorAll('input')].forEach(c=>c.checked=false);
   categorySel.value=brandSel.value=sizeSel.value='';
   applyFilters();
 });
 
-// ---- Основные функции ------------------------------------------
+// ---- functions ----------
 function initFilters(){
-  // Банк (чекбоксы)
-  const banks = uniq(data.map(r=>r[BANK])).sort();
-  bankMenu.innerHTML = banks.map(b=>`
-      <label><input type="checkbox" value="${b}"> ${b}</label>`).join('');
+  // bank
+  const banks=uniq(data.map(r=>r[BANK])).sort();
+  bankMenu.innerHTML=banks.map(b=>`<label><input type="checkbox" value="${b}"> ${b}</label>`).join('');
   bankMenu.querySelectorAll('input').forEach(cb=>{
     cb.addEventListener('change',()=>{
-      cb.checked ? selectedBanks.add(cb.value) : selectedBanks.delete(cb.value);
+      cb.checked?selectedBanks.add(cb.value):selectedBanks.delete(cb.value);
       applyFilters();
     });
   });
-  // Остальные селекты
-  fillSelect(categorySel, uniq(data.map(r=>r[CAT])));
-  fillSelect(brandSel   , uniq(data.map(r=>r[BRAND])));
-  fillSelect(sizeSel    , uniq(data.map(r=>r[SIZE])));
+  // other selects
+  fillSelect(categorySel,uniq(data.map(r=>r[CAT])));
+  fillSelect(brandSel   ,uniq(data.map(r=>r[BRAND])));
+  fillSelect(sizeSel    ,uniq(data.map(r=>r[SIZE])));
 }
 
 function applyFilters(){
-  // отфильтрованный массив
-  const filtered = data.filter(item=>{
-    if(selectedBanks.size && !selectedBanks.has(item[BANK])) return false;
-    if(selectedCat && item[CAT]!==selectedCat) return false;
-    if(selectedBrand && item[BRAND]!==selectedBrand) return false;
-    if(selectedSize && item[SIZE]!==selectedSize) return false;
-    if(searchTerm && !lower(values(item)).includes(lower(searchTerm))) return false;
+  const filtered=data.filter(item=>{
+    if(selectedBanks.size&&!selectedBanks.has(item[BANK]))return false;
+    if(selectedCat&&item[CAT]!==selectedCat)return false;
+    if(selectedBrand&&item[BRAND]!==selectedBrand)return false;
+    if(selectedSize&&item[SIZE]!==selectedSize)return false;
+    if(searchTerm&&!lower(values(item)).includes(lower(searchTerm)))return false;
     return true;
   });
 
-  // подсказка / видимость таблицы
-  const showTable = (selectedCat || searchTerm.length);
+  const showTable=(selectedCat||searchTerm.length);
   table.classList.toggle('hidden',!showTable);
-  hintText.style.display = showTable ? 'none':'block';
+  hintText.style.display=showTable?'none':'block';
 
-  // ререндер table
   renderTable(filtered);
-
-  // пересчёт опций селектов (чтобы оставлять только допустимые комбинации)
   updateSelectOptions(filtered);
 
-  // сброс деталей, если текущая запись ушла из списка
-  if(detailsBox.style.display==='block' && !filtered.some(r=>r.id===detailsBox.dataset.id)){
+  if(detailsBox.style.display==='block'&&!filtered.some(r=>r.id===detailsBox.dataset.id)){
     detailsBox.style.display='none';
   }
 }
 
 function renderTable(rows){
-  tbody.innerHTML = rows.map((r,i)=>`
+  tbody.innerHTML=rows.map((r,i)=>`
     <tr data-index="${i}">
-      <td data-label="Банк">${r[BANK]}</td>
-      <td data-label="Компания/бренд">${r[BRAND]}</td>
-      <td data-label="Размер">${r[SIZE]}</td>
+      <td>${r[BANK]}</td>
+      <td>${r[BRAND]}</td>
+      <td>${r[SIZE]}</td>
     </tr>`).join('');
 
   [...tbody.querySelectorAll('tr')].forEach(tr=>{
     tr.addEventListener('click',()=>{
-      const item = rows[tr.dataset.index];
+      const item=rows[tr.dataset.index];
       showDetails(item);
     });
   });
@@ -416,32 +405,30 @@ function renderTable(rows){
 
 function showDetails(item){
   detailsBox.style.display='block';
-  detailsBox.innerHTML = `
+  detailsBox.innerHTML=`
     <h2>${item[BRAND]} — ${item[BANK]}</h2>
-    <div>${Object.entries(item).map(([k,v])=>`<p><strong>${k}:</strong> ${v}</p>`).join('')}</div>`;
+    ${Object.entries(item).map(([k,v])=>`<p><strong>${k}:</strong> ${v}</p>`).join('')}`;
 }
 
-function fillSelect(sel, list){
-  sel.innerHTML = '<option value="">Все</option>' +
-    list.sort().map(v=>`<option>${v}</option>`).join('');
+function fillSelect(sel,list){
+  sel.innerHTML='<option value="">Все</option>'+list.sort().map(v=>`<option>${v}</option>`).join('');
 }
 
 function updateSelectOptions(currentRows){
-  // при обновлении сохраняем уже выбранное (если ещё актуально)
-  const upd = (sel,key,keepVal) =>{
-    const opts = uniq(currentRows.map(r=>r[key]));
-    const cur  = sel.value;
+  const upd=(sel,key)=>{
+    const opts=uniq(currentRows.map(r=>r[key]));
+    const cur=sel.value;
     fillSelect(sel,opts);
     if(opts.includes(cur)) sel.value=cur;
-    else if(!keepVal) { // сбросить если значение пропало
-      if(sel===categorySel) selectedCat='';
-      if(sel===brandSel)    selectedBrand='';
-      if(sel===sizeSel)     selectedSize='';
+    else{
+      if(sel===categorySel)selectedCat='';
+      if(sel===brandSel)   selectedBrand='';
+      if(sel===sizeSel)    selectedSize='';
     }
   };
-  upd(categorySel,CAT,true);
-  upd(brandSel,BRAND,true);
-  upd(sizeSel ,SIZE,true);
+  upd(categorySel,CAT);
+  upd(brandSel,BRAND);
+  upd(sizeSel,SIZE);
 }
 </script>
 </body>

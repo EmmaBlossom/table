@@ -1,629 +1,294 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Кэшбэк и скидки</title>
-  <style>
-    :root {
-      --primary: #049574;
-      --bg: #ffffff;
-      --text: #222;
-      --border: #e0e0e0;
-    }
-
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-        "Helvetica Neue", Arial, sans-serif;
-      margin: 0;
-      padding: 1rem;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    h1 {
-      margin-top: 0;
-      font-size: 1.6rem;
-    }
-
-    /* ----------------- Filters ----------------- */
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      align-items: flex-end;
-      margin-bottom: 1rem;
-    }
-
-    .filter {
-      display: flex;
-      flex-direction: column;
-      font-size: 0.9rem;
-    }
-
-    .filter label {
-      font-weight: 600;
-      margin-bottom: 0.3rem;
-    }
-
-    .filter select,
-    .filter input[type="search"] {
-      padding: 0.4rem 0.6rem;
-      font-size: 1rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      min-width: 150px;
-    }
-
-    /* --- Multiselect for Bank --- */
-    .multiselect {
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.4rem 0.6rem;
-      max-height: 11rem;
-      overflow-y: auto;
-      min-width: 150px;
-      background: var(--bg);
-    }
-
-    .multiselect label {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      margin-bottom: 0.2rem;
-      cursor: pointer;
-    }
-
-    /* ----------------- Table ----------------- */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      display: none; /* hidden until filters/search applied */
-    }
-
-    thead {
-      background: var(--primary);
-      color: #fff;
-    }
-
-    th,
-    td {
-      padding: 0.6rem;
-      border: 1px solid var(--border);
-      text-align: left;
-    }
-
-    tbody tr {
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    tbody tr:hover {
-      background: #f7f7f7;
-    }
-
-    /* --------------- Details --------------- */
-    #details {
-      margin-top: 1rem;
-      padding: 1rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      display: none;
-      background: #fcfcfc;
-      line-height: 1.4;
-    }
-
-    /* --------------- Buttons --------------- */
-    #resetBtn {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.9rem;
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    #resetBtn:hover {
-      opacity: 0.9;
-    }
-
-    /* --------------- Responsive --------------- */
-    @media (max-width: 600px) {
-      .filters {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      table,
-      thead,
-      tbody,
-      tr,
-      th,
-      td {
-        display: block;
-      }
-
-      thead {
-        display: none;
-      }
-
-      tr {
-        margin-bottom: 1rem;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-      }
-
-      td {
-        border: none;
-        padding: 0.6rem 0.8rem;
-        position: relative;
-      }
-
-      td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        display: block;
-        margin-bottom: 0.2rem;
-        word-break: break-word;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Кэшбэк-таблица</title>
+<style>
+:root{
+  --accent:#0066ff;
+  --radius:8px;
+  --border:#e2e8f0;
+  --bg:#fafafa;
+  --shadow:0 2px 6px rgba(0,0,0,.05);
+  --font:"Segoe UI","Roboto","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;font-family:var(--font);}
+body{margin:0;padding:1rem;max-width:1200px;margin-inline:auto;background:var(--bg);}
+h1{margin:0 0 1rem 0}
+.filters{display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:.75rem}
+.filter-group{display:flex;flex-direction:column;min-width:140px}
+.filter-group label{font-size:.875rem;font-weight:600;margin-bottom:.25rem}
+select,input[type="text"],button.dropdown-btn{padding:.45rem .6rem;border:1px solid var(--border);border-radius:var(--radius);background:#fff;font:inherit;}
+button.dropdown-btn{cursor:pointer;display:flex;align-items:center;gap:.35rem;white-space:nowrap}
+button.reset{background:#ff5252;color:#fff;border:none;border-radius:var(--radius);padding:.45rem 1rem;cursor:pointer;box-shadow:var(--shadow);}
+button.reset:hover{opacity:.9}
+.bank-menu{position:absolute;top:100%;left:0;width:280px;max-height:220px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow);padding:.35rem;display:none;z-index:10}
+.bank-menu.show{display:block}
+.bank-menu label{display:flex;align-items:center;gap:.5rem;padding:.25rem .4rem;border-radius:4px;cursor:pointer}
+.bank-menu label:hover{background:var(--bg)}
+table{width:100%;border-collapse:collapse;margin-top:.5rem}
+th,td{padding:.6rem .5rem;text-align:left;border-bottom:1px solid var(--border);word-break:break-word}
+thead th{background:#f0f4ff;font-weight:600}
+tr:hover{background:#f5f9ff;cursor:pointer}
+#hintText{margin:.75rem 0;font-size:.9rem;color:#666}
+.details{margin-top:1rem;padding:1rem;border:1px solid var(--border);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow);display:none;line-height:1.4}
+.details h2{margin-top:0}
+.hidden{display:none !important;}
+@media(max-width:600px){
+  /* мобильная табличная верстка */
+  table,thead,tr,tbody,th,td{display:block;width:100%}
+  thead{display:none}
+  tr{margin-bottom:1rem;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  td{padding:.55rem 45% .55rem .6rem;border:none;border-bottom:1px solid var(--border)}
+  td:last-child{border-bottom:none}
+  td::before{content:attr(data-label);position:absolute;left:.75rem;font-weight:600}
+}
+</style>
 </head>
 <body>
-  <h1>Кэшбэк и скидки</h1>
+<h1>Текущие кэшбэк-акции</h1>
 
-  <div class="filters">
-    <div class="filter">
-      <label for="bankFilter">Банк</label>
-      <div id="bankFilter" class="multiselect"></div>
-    </div>
-
-    <div class="filter">
-      <label for="categoryFilter">Категория</label>
-      <select id="categoryFilter">
-        <option value="">Все</option>
-      </select>
-    </div>
-
-    <div class="filter">
-      <label for="brandFilter">Компания/бренд</label>
-      <select id="brandFilter">
-        <option value="">Все</option>
-      </select>
-    </div>
-
-    <div class="filter">
-      <label for="sizeFilter">Размер кэшбека/скидки</label>
-      <select id="sizeFilter">
-        <option value="">Все</option>
-      </select>
-    </div>
-
-    <div class="filter" style="flex: 1; min-width: 180px;">
-      <label for="searchInput">Поиск</label>
-      <input type="search" id="searchInput" placeholder="Поиск..." />
-    </div>
-
-    <button id="resetBtn">Сбросить</button>
+<div class="filters">
+  <!-- Банк (чекбоксы в dropdown) -->
+  <div class="filter-group" style="position:relative">
+    <label>Банк</label>
+    <button id="bankBtn" class="dropdown-btn">Выбрать банк ▾</button>
+    <div id="bankMenu" class="bank-menu"></div>
   </div>
 
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th>Банк</th>
-        <th>Компания/бренд</th>
-        <th>Размер кэшбека/скидки</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <!-- Категория -->
+  <div class="filter-group">
+    <label for="categoryFilter">Категория</label>
+    <select id="categoryFilter"><option value="">Все</option></select>
+  </div>
 
-  <div id="details"></div>
+  <!-- Бренд -->
+  <div class="filter-group">
+    <label for="brandFilter">Компания/бренд</label>
+    <select id="brandFilter"><option value="">Все</option></select>
+  </div>
 
-  <script>
-    /* ------------------------- ДАННЫЕ ------------------------- */
-    // Замените содержимое массива "data" своим JSON или загрузите из файла.
-    const data = [
-        {
-    "Банк": "Т-Банк",
-    "Карта": "Black",
-    "Категория": "Еда и продукты",
-    "Компания/бренд": "Tasty Coffee",
-    "Размер кэшбека/скидки ": "Кэшбэк 3%",
-    "Условия (если указаны)": "На 1 покупку онлайн от 5 ₽",
-    "Короткое описание компании/бренда": "Интернет-магазин свежего кофе",
-    "Даты проведения акции": "С 12 по 26 мая",
-    "Как получить кэшбэк": "Выберите что-нибудь на сумму от 5 ₽\r\nОплатите покупку любой картой Т‑Банка на сайте партнера \r\nОплатить курьеру, в пункте выдачи заказов, по QR-коду и через СБП нельзя \r\nКэшбэк придет в дату следующей выписки",
-    "Макс. кэшбек/скидка в руб": 300,
-    "Сайт": "https://shop.tastycoffee.ru/?utm_source=tinkoff",
-    "О партнере": "Tasty Coffee — интернет-магазин обжарщика кофе. Кофе в зернах для эспрессо-машины и заварки фильтр-методами, возможность выбрать помол для зерна. Аксессуары для заваривания кофе: фильтры, воронки, аэропрессы и многое другое. "
+  <!-- Размер -->
+  <div class="filter-group">
+    <label for="sizeFilter">Размер</label>
+    <select id="sizeFilter"><option value="">Все</option></select>
+  </div>
+
+  <!-- Поиск -->
+  <div class="filter-group" style="flex:1;min-width:200px">
+    <label for="searchInput">Поиск</label>
+    <input type="text" id="searchInput" placeholder="Начните вводить…">
+  </div>
+
+  <button id="resetBtn" class="reset">Сбросить</button>
+</div>
+
+<p id="hintText">Нужно выбрать фильтр «Категория», чтобы таблица отобразилась</p>
+
+<table id="dataTable" class="hidden">
+  <thead>
+    <tr><th>Банк</th><th>Компания/бренд</th><th>Размер</th></tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div id="details" class="details"></div>
+
+<script>
+// ------ ДАННЫЕ -------------------------------------------------
+const data = [
+  {
+    "Банк":"Т-Банк",
+    "Карта":"Black",
+    "Категория":"Еда и продукты",
+    "Компания/бренд":"Tasty Coffee",
+    "Размер кэшбека/скидки ":"Кэшбэк 3%",
+    "Условия (если указаны)":"На 1 покупку онлайн от 5 ₽",
+    "Короткое описание компании/бренда":"Интернет-магазин свежего кофе",
+    "Даты проведения акции":"С 12 по 26 мая",
+    "Как получить кэшбэк":"Выберите что-нибудь на сумму от 5 ₽\nОплатите покупку любой картой Т-Банка на сайте партнера\nОплатить курьеру, в пункте выдачи заказов, по QR-коду и через СБП нельзя\nКэшбэк придет в дату следующей выписки",
+    "Макс. кэшбек/скидка в руб":300,
+    "Сайт":"https://shop.tastycoffee.ru/?utm_source=tinkoff",
+    "О партнере":"Tasty Coffee — интернет-магазин обжарщика кофе. ..."
   },
   {
-    "Банк": "Т-Банк",
-    "Карта": "Black",
-    "Категория": "Еда и продукты",
-    "Компания/бренд": "Мануфактура Кофе",
-    "Размер кэшбека/скидки ": "Кэшбэк 40%",
-    "Условия (если указаны)": "На покупки онлайн",
-    "Короткое описание компании/бренда": "Зерновой кофе",
-    "Даты проведения акции": "С 5 мая по 4 июля",
-    "Как получить кэшбэк": "Выберите что-нибудь на любую сумму\r\nОплатите покупку любой картой Т‑Банка на сайте партнера\r\nКэшбэк придет в дату следующей выписки",
-    "Макс. кэшбек/скидка в руб": "Максимум за одну покупку — 2000 бонусов",
-    "Сайт": "https://manufactorycoffee.ru/",
-    "О партнере": "Мануфактура кофе — интернет-магазин обжарщика из Санкт-Петербурга. Свежая обжарка и бесплатный помол зерна. Кофе для всех видов заваривания — от эспрессо-машины до чашки."
+    "Банк":"Т-Банк",
+    "Карта":"Black",
+    "Категория":"Еда и продукты",
+    "Компания/бренд":"Мануфактура Кофе",
+    "Размер кэшбека/скидки ":"Кэшбэк 40%",
+    "Условия (если указаны)":"На покупки онлайн",
+    "Короткое описание компании/бренда":"Зерновой кофе",
+    "Даты проведения акции":"С 5 мая по 4 июля",
+    "Как получить кэшбэк":"Выберите что-нибудь на любую сумму\nОплатите покупку любой картой Т-Банка на сайте партнера\nКэшбэк придет в дату следующей выписки",
+    "Макс. кэшбек/скидка в руб":"Максимум за одну покупку — 2000 бонусов",
+    "Сайт":"https://manufactorycoffee.ru/",
+    "О партнере":"Мануфактура кофе — интернет-магазин ..."
   },
   {
-    "Банк": "Т-Банк",
-    "Карта": "Black",
-    "Категория": "Еда и продукты",
-    "Компания/бренд": "Elementaree",
-    "Размер кэшбека/скидки ": "Скидка 40%",
-    "Условия (если указаны)": "На 1 покупку онлайн от 3 000 ₽",
-    "Короткое описание компании/бренда": "Доставка наборов продуктов с рецептами для приготовления",
-    "Промокод (если указан)": "tbanknew",
-    "Даты проведения акции": "С 1 по 31 мая",
-    "Как получить кэшбэк": "Оформите заказ на сумму от 3000 ₽ на сайте партнера\r\nПеред оплатой введите промокод\r\nОплатите покупку любой картой Т‑Банка на сайте партнера",
-    "Дополнительная информация (если есть)": "Промокод действует для новых клиентов партнера при оплате картой Т‑Банка и дает скидку 40% на первую покупку от 3 000 рублей на сайте. Скидка действует от текущей цены и не суммируется с другими акциями. Количество промокодов ограничено. Условия могут быть изменены партнером, а акция — досрочно остановлена, если все промокоды использованы. Промокод, срок его действия и порядок применения формируются на стороне партнера. Т‑Банк не несет ответственности за действие промокодов.",
-    "Макс. кэшбек/скидка в руб": "Не указан",
-    "Сайт": "https://elementaree.ru/",
-    "О партнере": "Elementaree — доставка готовых наборов продуктов. Подготовленные ингредиенты: сваренный бульон, нарезанное мясо, очищенные овощи. Возможность самостоятельно составить меню."
-  },
-  {
-    "Банк": "Т-Банк",
-    "Карта": "Black",
-    "Категория": "Одежда, обувь, аксессуары",
-    "Компания/бренд": "Lacoste",
-    "Размер кэшбека/скидки ": "Кэшбэк 5%",
-    "Условия (если указаны)": "На покупки онлайн",
-    "Короткое описание компании/бренда": "Интернет-магазин одежды европейского бренда",
-    "Даты проведения акции": "С 11 октября 2024 г по 11 октября 2025 г",
-    "Как получить кэшбэк": "Купите что-нибудь на сайте партнера \r\nОплатите покупку любой картой Т‑Банка, кроме кредитной \r\nНе действует при оплате «Долями», по QR-коду и через СБП \r\nКэшбэк придет в дату следующей выписки",
-    "Макс. кэшбек/скидка в руб": "Максимум в месяц — 5000 бонусов",
-    "Сайт": "https://lacoste.ru/",
-    "О партнере": "Lacoste — интернет-магазин европейского бренда. Мужская, женская и детская одежда, обувь и аксессуары в спортивном и повседневном стиле. Доставка по всей России."
-  },
-  {
-    "Банк": "Т-Банк",
-    "Карта": "Black",
-    "Категория": "Одежда, обувь, аксессуары",
-    "Компания/бренд": "Amazing Red",
-    "Размер кэшбека/скидки ": "Кэшбэк 10%",
-    "Условия (если указаны)": "На 1 покупку онлайн",
-    "Короткое описание компании/бренда": "Кроссовки и спортивная одежда",
-    "Даты проведения акции": "С 1 по 31 мая",
-    "Как получить кэшбэк": "Выберите что-нибудь на сайте партнера \r\nОплатите покупку любой картой Т-Банка \r\nНельзя оплатить через СБП и в магазине партнера Кэшбэк придет в дату следующей выписки",
-    "Макс. кэшбек/скидка в руб": "Не указан",
-    "Сайт": "https://amazingred.ru/",
-    "О партнере": "Amazing Red — мультибрендовые магазины одежды, обуви и аксессуаров спортивного и уличного стиля от  брендов PUMA, Nike, Asics и Hoka"
-  },
-  {
-    "Банк": "Т-Банк",
-    "Карта": "Black",
-    "Категория": "Одежда, обувь, аксессуары",
-    "Компания/бренд": "Mascotte",
-    "Размер кэшбека/скидки ": "Кэшбэк 5%",
-    "Короткое описание компании/бренда": "Магазины брендовой обуви",
-    "Даты проведения акции": "С 1 мая по 31 июля",
-    "Как получить кэшбэк": "Выберите что-нибудь на любую сумму в магазине партнера \r\nДля покупок на кассе действует только в точках, отмеченных на карте Оплатите покупку любой картой Т‑Банка на сайте партнера или на кассе Оплатить по QR-коду и через СБП нельзя \r\nКэшбэк придет в дату следующей выписки",
-    "Макс. кэшбек/скидка в руб": "Максимум за всё время акции — 2000 бонусов",
-    "Сайт": "https://www.mascotte.ru/",
-    "О партнере": "Mascotte — интернет-магазин и сеть салонов брендовой обуви на любой сезон для женщин и мужчин. Также в продаже сумки и аксессуары, которые сочетаются с обувью и помогают создавать завершенный образ."
-  },
-  {
-    "Банк": "Альфа-Банк",
-    "Карта": "Альфа Карта",
-    "Категория": "Еда и продукты",
-    "Компания/бренд": "Мануфактура Кофе",
-    "Размер кэшбека/скидки ": "Кэшбэк до 30%",
-    "Условия (если указаны)": "На все покупки до 30.06.2025",
-    "Короткое описание компании/бренда": "Обжарка кофе",
-    "Даты проведения акции": "01.04.2025 - 30.06.2025",
-    "Как получить кэшбэк": "Оплачивайте покупки в магазинах и на сайте партнёра Картой Альфа-Банка \r\nЖдите кэшбэк \r\nОн придёт 10 числа следующего месяца",
-    "Макс. кэшбек/скидка в руб": "Максимальный кэшбэк по акции за покупку — 2000 ₽",
-    "Сайт": "https://manufactorycoffee.ru/?utm_source=alfabank&utm_medium=banner&utm_campaign=alfacashback",
-    "О партнере": "Самые контркультурные обжарщики кофе. Бесплатная доставка по РФ от 5000 руб"
-  },
-  {
-    "Банк": "Альфа-Банк",
-    "Карта": "Альфа Карта",
-    "Категория": "Еда и продукты",
-    "Компания/бренд": "Tasty Coffee",
-    "Размер кэшбека/скидки ": "Кэшбэк до 10%",
-    "Условия (если указаны)": "На все покупки до 31.05.2025",
-    "Короткое описание компании/бренда": "Интернет-магазин кофе и чая",
-    "Даты проведения акции": "01.05.2025 - 31.05.2025",
-    "Как получить кэшбэк": "Оплачивайте покупки в интернет-магазине партнёра Картой Альфа-Банка \r\nЖдите кэшбэк \r\nОн придёт 10 числа следующего месяца",
-    "Макс. кэшбек/скидка в руб": "Максимальный кэшбэк по акции за месяц — 400 ₽",
-    "Сайт": "https://shop.tastycoffee.ru/",
-    "О партнере": "Tasty Coffee — кофе свежей обжарки с бесплатной доставкой. Разные форматы кофе: дрип-пакеты, концентрат, готовый кофе в банках и зерновой кофе для всех способов приготовления помогут получить напиток дома как в кофейне без специального оборудования и навыков. Зерно обжаривают под заказ и бесплатно доставляют по всей России, а если вкус не понравится — вернут деньги."
-  },
-  {
-    "Банк": "Альфа-Банк",
-    "Карта": "Альфа Карта",
-    "Категория": "Одежда, обувь, аксессуары",
-    "Компания/бренд": "Lacoste",
-    "Размер кэшбека/скидки ": "Кэшбэк до 5%",
-    "Условия (если указаны)": "На все покупки до 31.12.2025",
-    "Короткое описание компании/бренда": "Мужская и женская одежда",
-    "Даты проведения акции": "01.01.2025 - 31.12.2025",
-    "Как получить кэшбэк": "Оплачивайте покупки в интернет-магазине партнёра Картой Альфа-Банка \r\nЖдите кэшбэк \r\nОн придёт 10 числа следующего месяца",
-    "Макс. кэшбек/скидка в руб": "Максимальный кэшбэк по акции за месяц — 20 000 ₽",
-    "Сайт": "https://lacoste.ru/",
-    "О партнере": "Оригинальная мужская и женская одежда, обувь и аксессуары марки Lacoste в официальном интернет-магазине. Удобная оплата и бесплатная доставка по всей России!"
-  },
-  {
-    "Банк": "Альфа-Банк",
-    "Карта": "Альфа Карта",
-    "Категория": "Одежда, обувь, аксессуары",
-    "Компания/бренд": "SuperStep",
-    "Размер кэшбека/скидки ": "Кэшбэк до 5%",
-    "Условия (если указаны)": "На все заказы до 30.06.2025",
-    "Короткое описание компании/бренда": "Брендовые кроссовки и ботинки",
-    "Даты проведения акции": "01.05.2025 - 30.06.2025",
-    "Как получить кэшбэк": "Оплачивайте покупки в интернет-магазине партнёра Картой Альфа-Банка \r\nЖдите кэшбэк \r\nОн придёт 10 числа следующего месяца",
-    "Макс. кэшбек/скидка в руб": "Максимальный кэшбэк за весь период акции — 3000 ₽",
-    "Сайт": "https://superstep.ru/",
-    "О партнере": "Брендовые кроссовки и ботинки в интернет-магазине SuperStep"
-  },
-  {
-    "Банк": "ВТБ",
-    "Карта": "Дебетовая карта для жизни",
-    "Категория": "Еда и продукты",
-    "Компания/бренд": "Level Kitchen",
-    "Размер кэшбека/скидки ": "Кешбэк 45%",
-    "Условия (если указаны)": "Предложение действует при первой покупке на сумму от 2 000 ₽ по карте ВТБ на сайте и в мобильном приложении Level Kitchen.",
-    "Короткое описание компании/бренда": "Гтоовая еда",
-    "Даты проведения акции": "май (явно на сайте не указано)",
-    "Как получить кэшбэк": "Предложение действует при первой покупке на сумму от 2 000 ₽ по карте ВТБ на сайте и в мобильном приложении Level Kitchen.",
-    "Дополнительная информация (если есть)": "Акция действует для клиентов, которые не совершали покупки у партнера в течение 6 месяцев до старта акции.",
-    "Макс. кэшбек/скидка в руб": "Максимальный размер кешбэка – 2 000 ₽. Фонд акции ограничен.",
-    "Сайт": "https://levelkitchen.com/?utm_source=vtb&utm_medium=cpa&utm_campaign=cashback_base",
-    "О партнере": "Level Kitchen — это готовые блюда с доставкой для тех, кто хочет похудеть, питаться сбалансированно или пройти детокс. Можно заказать рацион на неделю или месяц, доставка раз в два или три дня в зависимости от региона."
-  },
-  {
-    "Банк": "ВТБ",
-    "Карта": "Дебетовая карта для жизни",
-    "Категория": "Еда и продукты",
-    "Компания/бренд": "Шефмаркет",
-    "Размер кэшбека/скидки ": "Кешбэк до 30% за продукты",
-    "Условия (если указаны)": "Предложение действует при первой покупке по карте ВТБ на сайте Шефмаркет",
-    "Короткое описание компании/бренда": "Сервис доставки продуктов с готовыми рецептами",
-    "Даты проведения акции": "май",
-    "Как получить кэшбэк": "Предложение действует при первой покупке по карте ВТБ на сайте Шефмаркет:\r\n\r\n- 30% за покупку на сумму от 2 600 ₽ для клиентов, которые ранее не совершали покупки у партнера. \r\nМаксимальное начисление – 800 ₽.\r\n\r\n- 5% за покупку на сумму от 3 500 ₽ для клиентов, которые не совершали покупки в течение последних 3 месяцев. \r\nМаксимальное начисление – 250 ₽.",
-    "Макс. кэшбек/скидка в руб": "800 или 250 рублей",
-    "Сайт": "https://www.chefmarket.ru/?utm_source=vtb&utm_medium=bank&utm_campaign=cashback",
-    "О партнере": "Шефмаркет – сервис доставки продуктов с готовыми рецептами. К каждому блюду прилагается фотоинструкция. Ингредиенты расфасованы для каждого рецепта. Бесплатная доставка."
-  },
-  {
-    "Банк": "ВТБ",
-    "Карта": "Дебетовая карта для жизни",
-    "Категория": "Одежда, обувь, аксессуары",
-    "Компания/бренд": "Lacoste ",
-    "Размер кэшбека/скидки ": "Кешбэк 7%",
-    "Условия (если указаны)": "Предложение действует при любой покупке на сумму от 1 500 ₽  по карте ВТБ в интернет-магазине Lacoste.",
-    "Короткое описание компании/бренда": "Бренд одежды",
-    "Даты проведения акции": "май",
-    "Как получить кэшбэк": "Предложение действует при любой покупке на сумму от 1 500 ₽ по карте ВТБ в интернет-магазине Lacoste.",
-    "Макс. кэшбек/скидка в руб": "не указана",
-    "Сайт": "https://lacoste.ru/",
-    "О партнере": "Lacoste — один из узнаваемых европейских брендов с полной линейкой мужской и женской одежды для повседневной жизни и активного времяпровождения."
-  },
-  {
-    "Банк": "ВТБ",
-    "Карта": "Дебетовая карта для жизни",
-    "Категория": "Одежда, обувь, аксессуары",
-    "Компания/бренд": "Mascotte",
-    "Размер кэшбека/скидки ": "Кэшбэк 5%",
-    "Условия (если указаны)": "Предложение действует на все покупки по карте ВТБ в интернет-магазине MASCOTTE. ",
-    "Короткое описание компании/бренда": "Магазины брендовой обуви",
-    "Даты проведения акции": "май",
-    "Как получить кэшбэк": "Предложение действует на все покупки по карте ВТБ в интернет-магазине MASCOTTE. ",
-    "Макс. кэшбек/скидка в руб": "Максимальный размер кешбэка – 2 000 ₽.",
-    "Сайт": "https://mascotte.ru/?utm_source=advcake&utm_medium=cpa&utm_campaign=vtb&utm_content=cashback&advcake_params=bc8bd579008eef9517372bd1c42bcc3d&utm_term=bc8bd579008eef9517372bd1c42bcc3d&erid=LdtCKSjoD&advcake_method=1&m=1",
-    "О партнере": "MASCOTTE — бренд обуви и аксессуаров, который делает ваш образ ярче."
+    "Банк":"Т-Банк",
+    "Карта":"Black",
+    "Категория":"Еда и продукты",
+    "Компания/бренд":"Elementaree",
+    "Размер кэшбека/скидки ":"Скидка 40%",
+    "Условия (если указаны)":"На 1 покупку онлайн от 3 000 ₽",
+    "Короткое описание компании/бренда":"Доставка наборов продуктов с рецептами для приготовления",
+    "Промокод (если указан)":"tbanknew",
+    "Даты проведения акции":"С 1 по 31 мая",
+    "Как получить кэшбэк":"Оформите заказ на сумму от 3000 ₽ ...",
+    "Дополнительная информация (если есть)":"Промокод действует ...",
+    "Макс. кэшбек/скидка в руб":"Не указан",
+    "Сайт":"https://elementaree.ru/",
+    "О партнере":"Elementaree — доставка готовых наборов продуктов ..."
   }
-      // ...добавьте остальные строки
-    ];
+];
+// ---------------------------------------------------------------
 
-    /* ---------------------- Вспомогательные функции ---------------------- */
-    const $ = (sel) => document.querySelector(sel);
-    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+// ---- КЛЮЧИ ПОЛЕЙ (trim обязательный, у одного поля есть пробел) ---
+const BANK  = 'Банк',
+      CAT   = 'Категория',
+      BRAND = 'Компания/бренд',
+      SIZE  = 'Размер кэшбека/скидки '; // <- есть пробел в конце
 
-    const bankContainer = $("#bankFilter");
-    const categoryFilter = $("#categoryFilter");
-    const brandFilter = $("#brandFilter");
-    const sizeFilter = $("#sizeFilter");
-    const searchInput = $("#searchInput");
-    const resetBtn = $("#resetBtn");
-    const table = $("#dataTable");
-    const tbody = table.querySelector("tbody");
-    const details = $("#details");
+// ---- DOM --------------------------------------------------------
+const bankBtn       = document.getElementById('bankBtn');
+const bankMenu      = document.getElementById('bankMenu');
+const categorySel   = document.getElementById('categoryFilter');
+const brandSel      = document.getElementById('brandFilter');
+const sizeSel       = document.getElementById('sizeFilter');
+const searchInput   = document.getElementById('searchInput');
+const resetBtn      = document.getElementById('resetBtn');
+const table         = document.getElementById('dataTable');
+const tbody         = table.querySelector('tbody');
+const detailsBox    = document.getElementById('details');
+const hintText      = document.getElementById('hintText');
 
-    // ключ с пробелом в конце в исходном JSON :)
-    const sizeKey = Object.keys(data[0]).find((k) => k.startsWith("Размер кэшбека"));
+// --- Состояние ---------------------------------------------------
+let selectedBanks   = new Set();
+let selectedCat     = '';
+let selectedBrand   = '';
+let selectedSize    = '';
+let searchTerm      = '';
 
-    /* ------------------------- Инициализация ------------------------- */
-    function initFilters() {
-      // Банк (checkbox)
-      const banks = [...new Set(data.map((r) => r["Банк"]))].sort();
-      bankContainer.innerHTML = banks
-        .map(
-          (b) => `
-        <label>
-          <input type="checkbox" value="${b}" /> ${b}
-        </label>`
-        )
-        .join("");
+// --- Вспомогалки -------------------------------------------------
+const uniq = arr => [...new Set(arr)];
+const lower  = s => s.toString().toLowerCase();
+const values = item => Object.values(item).join(' ♦ ');
 
-      // Категория
-      fillSelect(categoryFilter, [...new Set(data.map((r) => r["Категория"]))]);
+// --- Инициализация ----------------------------------------------
+initFilters();
+applyFilters();
 
-      // Компания/бренд
-      fillSelect(brandFilter, [...new Set(data.map((r) => r["Компания/бренд"]))]);
+// ---- Обработчики ------------------------------------------------
+bankBtn.addEventListener('click',()=>bankMenu.classList.toggle('show'));
+document.addEventListener('click',e=>{
+  if(!bankMenu.contains(e.target) && e.target!==bankBtn){ bankMenu.classList.remove('show');}
+});
+categorySel.addEventListener('change',e=>{selectedCat=e.target.value;applyFilters();});
+brandSel.addEventListener('change',e=>{selectedBrand=e.target.value;applyFilters();});
+sizeSel.addEventListener('change',e=>{selectedSize=e.target.value;applyFilters();});
+searchInput.addEventListener('input',e=>{searchTerm=e.target.value.trim();applyFilters();});
+resetBtn.addEventListener('click',()=>{
+  selectedBanks.clear();
+  selectedCat=selectedBrand=selectedSize=searchTerm='';
+  searchInput.value='';
+  [...bankMenu.querySelectorAll('input[type=checkbox]')].forEach(c=>c.checked=false);
+  categorySel.value=brandSel.value=sizeSel.value='';
+  applyFilters();
+});
 
-      // Размер кэшбека/скидки
-      fillSelect(sizeFilter, [...new Set(data.map((r) => r[sizeKey]))]);
-    }
-
-    function fillSelect(select, values) {
-      const current = select.value;
-      select.innerHTML = `<option value="">Все</option>` +
-        values
-          .sort()
-          .map((v) => `<option value="${v}">${v}</option>`)
-          .join("");
-      // восстанавливаем выбранное, если оно всё ещё в списке
-      if ([...select.options].some((o) => o.value === current)) {
-        select.value = current;
-      }
-    }
-
-    /* ----------------------- Фильтрация данных ----------------------- */
-    function getSelectedBanks() {
-      return $$("#bankFilter input[type='checkbox']")
-        .filter((c) => c.checked)
-        .map((c) => c.value);
-    }
-
-    function filterData() {
-      const banks = getSelectedBanks();
-      const cat = categoryFilter.value;
-      const brand = brandFilter.value;
-      const size = sizeFilter.value;
-      const search = searchInput.value.trim().toLowerCase();
-
-      return data.filter((row) => {
-        if (banks.length && !banks.includes(row["Банк"])) return false;
-        if (cat && row["Категория"] !== cat) return false;
-        if (brand && row["Компания/бренд"] !== brand) return false;
-        if (size && row[sizeKey] !== size) return false;
-
-        if (search) {
-          const allValues = Object.values(row).join(" ").toLowerCase();
-          return allValues.includes(search);
-        }
-        return true;
-      });
-    }
-
-    /* ------------------------ Обновление UI ------------------------ */
-    function renderTable(rows) {
-      tbody.innerHTML = rows
-        .map((row, idx) => {
-          return `
-        <tr data-idx="${idx}">
-          <td data-label="Банк">${row["Банк"]}</td>
-          <td data-label="Компания/бренд">${row["Компания/бренд"]}</td>
-          <td data-label="Размер кэшбека/скидки">${row[sizeKey]}</td>
-        </tr>`;
-        })
-        .join("");
-
-      // показываем / скрываем таблицу
-      const anyFilterApplied =
-        getSelectedBanks().length ||
-        categoryFilter.value ||
-        brandFilter.value ||
-        sizeFilter.value ||
-        searchInput.value.trim();
-      table.style.display = rows.length && anyFilterApplied ? "table" : "none";
-
-      // вешаем обработчик клика на строки
-      $$(`tr[data-idx]`).forEach((tr) =>
-        tr.addEventListener("click", () => showDetails(data[tr.dataset.idx]))
-      );
-
-      // если нет строк, прячем детали
-      if (!rows.length) {
-        details.style.display = "none";
-      }
-    }
-
-    function showDetails(row) {
-      const list = Object.entries(row)
-        .map(
-          ([k, v]) =>
-            `<p><strong>${k}:</strong> ${typeof v === "string" ? v.replace(/\n/g, "<br>") : v}</p>`
-        )
-        .join("");
-      details.innerHTML = list;
-      details.style.display = "block";
-      details.scrollIntoView({ behavior: "smooth" });
-    }
-
-    /* --------------------- Динамическое обновление фильтров --------------------- */
-    function updateDependentFilters(changed) {
-      const banksSel = getSelectedBanks();
-      const catsSel = categoryFilter.value;
-      const brandSel = brandFilter.value;
-      const sizeSel = sizeFilter.value;
-
-      function availValues(key, excludeFilter) {
-        return data
-          .filter((row) => {
-            if (excludeFilter !== "bank" && banksSel.length && !banksSel.includes(row["Банк"]))
-              return false;
-            if (excludeFilter !== "cat" && catsSel && row["Категория"] !== catsSel)
-              return false;
-            if (excludeFilter !== "brand" && brandSel && row["Компания/бренд"] !== brandSel)
-              return false;
-            if (excludeFilter !== "size" && sizeSel && row[sizeKey] !== sizeSel)
-              return false;
-            return true;
-          })
-          .map((r) => r[key]);
-      }
-
-      if (changed !== "cat")
-        fillSelect(categoryFilter, [...new Set(availValues("Категория", "cat"))]);
-      if (changed !== "brand")
-        fillSelect(brandFilter, [...new Set(availValues("Компания/бренд", "brand"))]);
-      if (changed !== "size")
-        fillSelect(sizeFilter, [...new Set(availValues(sizeKey, "size"))]);
-
-      // чекбоксы банка обновлять не будем, чтобы всегда показывать полный список
-    }
-
-    /* --------------------------- Сброс --------------------------- */
-    function resetAll() {
-      $$("#bankFilter input[type='checkbox']").forEach((c) => (c.checked = false));
-      categoryFilter.value = "";
-      brandFilter.value = "";
-      sizeFilter.value = "";
-      searchInput.value = "";
-      details.style.display = "none";
-      updateDependentFilters("reset");
-      renderTable([]);
-    }
-
-    /* ------------------- Обработчики событий -------------------- */
-    // Банк (multiselect)
-    bankContainer.addEventListener("change", () => {
-      updateDependentFilters("bank");
-      renderTable(filterData());
+// ---- Основные функции ------------------------------------------
+function initFilters(){
+  // Банк (чекбоксы)
+  const banks = uniq(data.map(r=>r[BANK])).sort();
+  bankMenu.innerHTML = banks.map(b=>`
+      <label><input type="checkbox" value="${b}"> ${b}</label>`).join('');
+  bankMenu.querySelectorAll('input').forEach(cb=>{
+    cb.addEventListener('change',()=>{
+      cb.checked ? selectedBanks.add(cb.value) : selectedBanks.delete(cb.value);
+      applyFilters();
     });
+  });
+  // Остальные селекты
+  fillSelect(categorySel, uniq(data.map(r=>r[CAT])));
+  fillSelect(brandSel   , uniq(data.map(r=>r[BRAND])));
+  fillSelect(sizeSel    , uniq(data.map(r=>r[SIZE])));
+}
 
-    // Односелектовые фильтры
-    [categoryFilter, brandFilter, sizeFilter].forEach((sel) => {
-      sel.addEventListener("change", (e) => {
-        updateDependentFilters(e.target.id.replace("Filter", "").toLowerCase());
-        renderTable(filterData());
-      });
+function applyFilters(){
+  // отфильтрованный массив
+  const filtered = data.filter(item=>{
+    if(selectedBanks.size && !selectedBanks.has(item[BANK])) return false;
+    if(selectedCat && item[CAT]!==selectedCat) return false;
+    if(selectedBrand && item[BRAND]!==selectedBrand) return false;
+    if(selectedSize && item[SIZE]!==selectedSize) return false;
+    if(searchTerm && !lower(values(item)).includes(lower(searchTerm))) return false;
+    return true;
+  });
+
+  // подсказка / видимость таблицы
+  const showTable = (selectedCat || searchTerm.length);
+  table.classList.toggle('hidden',!showTable);
+  hintText.style.display = showTable ? 'none':'block';
+
+  // ререндер table
+  renderTable(filtered);
+
+  // пересчёт опций селектов (чтобы оставлять только допустимые комбинации)
+  updateSelectOptions(filtered);
+
+  // сброс деталей, если текущая запись ушла из списка
+  if(detailsBox.style.display==='block' && !filtered.some(r=>r.id===detailsBox.dataset.id)){
+    detailsBox.style.display='none';
+  }
+}
+
+function renderTable(rows){
+  tbody.innerHTML = rows.map((r,i)=>`
+    <tr data-index="${i}">
+      <td data-label="Банк">${r[BANK]}</td>
+      <td data-label="Компания/бренд">${r[BRAND]}</td>
+      <td data-label="Размер">${r[SIZE]}</td>
+    </tr>`).join('');
+
+  [...tbody.querySelectorAll('tr')].forEach(tr=>{
+    tr.addEventListener('click',()=>{
+      const item = rows[tr.dataset.index];
+      showDetails(item);
     });
+  });
+}
 
-    // Поиск
-    searchInput.addEventListener("input", () => {
-      renderTable(filterData());
-    });
+function showDetails(item){
+  detailsBox.style.display='block';
+  detailsBox.innerHTML = `
+    <h2>${item[BRAND]} — ${item[BANK]}</h2>
+    <div>${Object.entries(item).map(([k,v])=>`<p><strong>${k}:</strong> ${v}</p>`).join('')}</div>`;
+}
 
-    // Сброс
-    resetBtn.addEventListener("click", resetAll);
+function fillSelect(sel, list){
+  sel.innerHTML = '<option value="">Все</option>' +
+    list.sort().map(v=>`<option>${v}</option>`).join('');
+}
 
-    /* ------------------------- Старт ------------------------- */
-    initFilters();
-    // По умолчанию таблица скрыта, ждём действий пользователя
-  </script>
+function updateSelectOptions(currentRows){
+  // при обновлении сохраняем уже выбранное (если ещё актуально)
+  const upd = (sel,key,keepVal) =>{
+    const opts = uniq(currentRows.map(r=>r[key]));
+    const cur  = sel.value;
+    fillSelect(sel,opts);
+    if(opts.includes(cur)) sel.value=cur;
+    else if(!keepVal) { // сбросить если значение пропало
+      if(sel===categorySel) selectedCat='';
+      if(sel===brandSel)    selectedBrand='';
+      if(sel===sizeSel)     selectedSize='';
+    }
+  };
+  upd(categorySel,CAT,true);
+  upd(brandSel,BRAND,true);
+  upd(sizeSel ,SIZE,true);
+}
+</script>
 </body>
 </html>
